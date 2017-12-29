@@ -50,5 +50,4 @@ module.exports = (app) => {
   if (process.env.VCAP_APPLICATION) {
     require('./security')(app);
   }
-  require('./passport')(app);
 };

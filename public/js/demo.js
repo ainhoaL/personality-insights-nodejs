@@ -27,7 +27,6 @@ var globalState = {
   selectedTwitterUser: undefined,
   selectedTwitterImage: undefined,
   selectedTwitterUserLang: undefined,
-  selectedSample: undefined,
   languageSelected: undefined,
   currentProfile: undefined,
   userLocale: undefined
@@ -93,10 +92,8 @@ function renderMarkdown(s) {
 
 $(document).ready(function() {
 
-  var SAMPLE_TEXTS = [ 'sample1', 'sample2', 'sample3', 'ar', 'ja'];
   var textCache = {};
 
-  globalState.selectedSample = SAMPLE_TEXTS[0];
   globalState.languageSelected = undefined;
 
   var $big5Traits = $('.output-big-5--traits');
@@ -105,10 +102,8 @@ $(document).ready(function() {
   var $valuesTraits = $('.output-values--traits');
   var $needsToggle = $('.output-needs--toggle');
   var $outputSummaryText = $('.output-summary--summary');
-  var $inputTextArea = $('.input--text-area');
   var $inputWordCount = $('.input--word-count-number');
   var $inputForm1 = $('.input--form1');
-  var $inputForm2 = $('.input--form2');
   var $resetButton = $('.input--reset-button');
   var $loading = $('.loading');
   var $output = $('.output');
@@ -118,6 +113,7 @@ $(document).ready(function() {
   var $outputJSONButton = $('.output--json-button');
   var $error = $('.error');
   var $errorMessage = $('.error--message');
+  var $twitterInput = $('.twitter--name');
 
   // Instantiate external PI modules
   const TraitNames = new PersonalityTraitNames({
@@ -165,85 +161,25 @@ $(document).ready(function() {
       globalState.selectedLanguage = $(this).attr('value');
     });
 
-    $('input[name="text-sample"]').click(function() {
-      var textFile = $(this).attr('data-file'),
-        orientation = $(this).attr('data-orientation');
-      globalState.selectedSample = textFile;
-
-      if (orientation === 'right-to-left') {
-        $inputTextArea.removeClass('left-to-right');
-        $inputTextArea.addClass('right-to-left');
-      } else {
-        $inputTextArea.removeClass('right-to-left');
-        $inputTextArea.addClass('left-to-right');
-      }
-
-      $('#languageChooser').hide();
-
-      loadSampleText(textFile);
-      updateWordCount();
-    });
-
     $(window).resize(function() {
       if ($(window).width() < 800) {
         $('.smartphone-hidden').hide();
-        if (globalState.selectedSample == 'custom') {
-          $('input[name="text-sample"]:first').trigger('click');
-        }
       } else {
         $('label[for="text-custom"]').show();
       }
     });
 
-    $('input#text-custom').unbind('click').click(function() {
-      globalState.selectedSample = 'custom';
-
-      $inputTextArea.removeClass('right-to-left');
-      $inputTextArea.addClass('left-to-right');
-
-      $('#languageChooser').show();
-      setTextSample('', false);
-      updateWordCount();
-
-      if (!globalState.selectedLanguage) {
-        $('input#lang-en').trigger('click');
-      }
-    });
-
-    $('input[name="twitter"]').click(function() {
-      var twitterId = $(this).val();
-      var twitterLang = $(this).attr('data-lang');
-      globalState.selectedTwitterUser = twitterId;
-      globalState.selectedTwitterImage = $('label[for="' + $(this).attr('id') + '"] img').attr('src');
-      globalState.selectedTwitterUserLang = twitterLang;
-    });
-
     $inputForm1.submit(function(e) {
+      var twitterName = $twitterInput.val();
       e.cancelBubble = true;
       e.preventDefault();
       if (e.stopPropagation)
         e.stopPropagation();
 
       enableAnalyzeButtons(false);
-      loadTwitterUser(globalState.selectedTwitterUser, {
-        language: globalState.selectedTwitterUserLang
+      loadTwitterUser(twitterName, {
+        language: 'en'
       });
-    });
-
-    $inputForm2.submit(function(e) {
-      e.cancelBubble = true;
-      e.preventDefault();
-      if (e.stopPropagation)
-        e.stopPropagation();
-
-      enableAnalyzeButtons(false);
-      var lang = globalState.selectedSample == 'custom'
-        ? globalState.selectedLanguage
-        : $('input#text-' + globalState.selectedSample).attr('data-lang');
-
-      setLoadingState();
-
-      getProfileForText($('.input--text-area').val(), {language: lang});
     });
   }
 
@@ -618,11 +554,6 @@ $(document).ready(function() {
     });
   }
 
-
-  $inputTextArea.on('propertychange change click keyup input paste', function() {
-    updateWordCount();
-  });
-
   function loadWordCount(data) {
     $('.output--word-count-number').text(data.word_count);
     $('.output--word-count-message').removeClass('show');
@@ -674,91 +605,13 @@ $(document).ready(function() {
     return obj2.score - obj1.score;
   }
 
-  function preloadSampleTexts(callback) {
-    var shared = {
-      done: 0
-    };
-    SAMPLE_TEXTS.forEach(function(name) {
-      $Q.get('data/text/' + name + '.txt').then(function(text) {
-        shared.done = shared.done + 1;
-        textCache[name] = text;
-
-        if (shared.done == SAMPLE_TEXTS.length && callback) {
-          callback();
-        }
-      }).done();
-    });
-  }
-
-  function loadSampleText(name) {
-    if (textCache[name]) {
-      setTextSample(textCache[name], true);
-      updateWordCount();
-    } else {
-      $Q.get('data/text/' + name + '.txt').then(function(text) {
-        setTextSample(text, true);
-        textCache[name] = text;
-      }).then(function() {
-        updateWordCount();
-      }).done();
-    }
-  }
-
-  function showHiddenLanguages() {
-    var enableLang = {
-      'ar': function() {
-        $('label[for="text-ar"]').show();
-        $('label[for="lang-ar"]').show();
-      }
-    };
-
-    Object.keys($.url().param()).filter(function(p) {
-      return p.slice(0, 5) === 'lang-';
-    }).map(function(p) {
-      return p.slice(5, p.length);
-    }).forEach(function(lang) {
-      if (enableLang[lang]) {
-        enableLang[lang]();
-      }
-    });
-  }
-
-  function selfAnalysis() {
-    return QUERY_PARAMS.source == 'myself';
-  }
-
-  function setSelfAnalysis() {
-    globalState.twitterUserId = TWITTER_USER.handle;
-    globalState.twitterUserImage = TWITTER_USER.image;
-    loadTwitterUser(TWITTER_USER.handle, {live_crawling: true});
-    $('#self-analysis-tab').trigger('click');
-    $('#your-twitter-panel .auth-form').hide();
-    $('#your-twitter-panel .analysis-form label').remove();
-    $('#your-twitter-panel .analysis-form').append([
-      '<label class="base--inline-label input--radio" for="my-twitter">', '<img class="input--thumb" src="', TWITTER_USER.image || '/images/no-image.png',
-      '">@',
-      TWITTER_USER.handle,
-      '</label>'
-    ].join(''));
-    $('#my-twitter').trigger('click');
-    $('#your-twitter-panel .analysis-form').show();
-  }
-
   function initialize() {
     $('input[name="twitter"]:first').attr('checked', true);
     $('input[name="text-sample"]:first').attr('checked', true);
 
     globalState.selectedTwitterUser = $('input[name="twitter"]:first').val();
-    showHiddenLanguages();
-    preloadSampleTexts(function() {
-      loadSampleText(globalState.selectedSample);
-    });
     registerHandlers();
-    $inputTextArea.addClass('orientation', 'left-to-right');
 
-    if (selfAnalysis() && TWITTER_USER.handle) {
-      setSelfAnalysis();
-    }
     selectDefaultLanguage();
   }
 
@@ -770,10 +623,6 @@ $(document).ready(function() {
 
   function countWords(str) {
     return str.split(' ').length;
-  }
-
-  function updateWordCount() {
-    $inputWordCount.text(countWords($inputTextArea.val()));
   }
 
   function updateJSON(results) {

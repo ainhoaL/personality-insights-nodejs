@@ -15,21 +15,12 @@
  */
 
 const pick = require('object.pick');
-const passport = require('passport');
 
 const twitterHelper = require('./helpers/twitter-helper');
 const personalityHelper = require('./helpers/personality-insights');
 const profileFromTweets = personalityHelper.profileFromTweets;
-const profileFromText = personalityHelper.profileFromText;
 
 module.exports = (app) => {
-  // personality profile from text
-  app.post('/api/profile/text', (req, res, next) =>
-    profileFromText(req.body)
-      .then(res.json.bind(res))
-      .catch(next)
-  );
-
   // personality profile from tweets
   app.post('/api/profile/twitter', (req, res, next) => {
     if (!req.body.userId) {
@@ -46,13 +37,6 @@ module.exports = (app) => {
       .then(res.json.bind(res))
       .catch(next);
   });
-
-  // twitter oauth
-  app.get('/auth/twitter', passport.authenticate('twitter'));
-  app.get('/auth/twitter/callback', passport.authenticate('twitter', {
-    failureRedirect: '/#error',
-    successRedirect: '/?source=myself'
-  }));
 
   // home page
   app.get('/', (req, res) =>

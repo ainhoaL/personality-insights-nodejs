@@ -16,29 +16,21 @@
 const twitter = require('twitter');
 const MAX_COUNT = 200;
 
-const tweetsFor = (user) =>
-  require(`../public/data/twitter/${user.userId}_tweets.json`);
-
-const getLocalTweets = (user) =>
-  new Promise((resolve) => {
-    try {
-      resolve(tweetsFor(user));
-    } catch(error) {
-      resolve(null);
-    }
-  });
-
 /**
 * Get the tweets based on the given screen_name.
 * Implemented with recursive calls that fetch up to 200 tweets in every call
 * Only returns english and original tweets (no retweets)
 */
-const getTweetsFromTwitter = (user) =>
+const getTweets = (user) =>
   new Promise((resolve, reject) => {
-    if (!user || !user.credentials) {
-      return reject(new Error('User credentials cannot be null'));
-    }
-    const twit = new twitter(user.credentials);
+
+    const twit = new twitter({
+      consumer_key: process.env.TWITTER_CONSUMER_KEY,
+      consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+      access_token_key: process.env.TWITTER_ACCESS_TOKEN,
+      access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+    });
+
     let tweets = [];
     const params = {
       screen_name: user.userId,
@@ -64,12 +56,5 @@ const getTweetsFromTwitter = (user) =>
 
     twit.get('statuses/user_timeline', params, processTweets);
   });
-
-const getTweets = (user) =>
-  getLocalTweets(user)
-    .then((tweets) =>
-      tweets ? tweets : getTweetsFromTwitter(user)
-    );
-
 
 module.exports = { getTweets };

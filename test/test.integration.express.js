@@ -19,11 +19,8 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const request = require('supertest');
-const fs = require('fs');
 
 const app = require('../app');
-const filePath = path.join(__dirname, '..', '/public/data/text/sample1.txt');
-const sampleText = fs.readFileSync(filePath, 'utf-8');
 
 if (!process.env.PERSONALITY_INSIGHTS_USERNAME || process.env.PERSONALITY_INSIGHTS_USERNAME == '<username>') {
   return;
@@ -32,39 +29,7 @@ if (!process.env.PERSONALITY_INSIGHTS_USERNAME || process.env.PERSONALITY_INSIGH
 describe('integration-express', function() {
   this.timeout(10000);
 
-  it('Generate profile from valid text', () =>
-    request(app).post('/api/profile/text')
-      .type('form')
-      .send({
-        language: 'en',
-        source_type: 'text',
-        accept_language: 'en',
-        include_raw: false,
-        text: sampleText
-      }).expect(200)
-  );
-
-  it('Generate error if insufficient text', () =>
-    request(app).post('/api/profile/text')
-      .type('form')
-      .send({
-        language: 'en',
-        source_type: 'text',
-        accept_language: 'en',
-        include_raw: false,
-        text: sampleText.substring(0, 100)
-      }).expect(400)
-  );
-
-  it('Generate profile if only text is specified', () =>
-    request(app).post('/api/profile/text')
-      .type('form')
-      .send({
-        text: sampleText
-      }).expect(200)
-  );
-
-  it('Generate profile from static tweets', () =>
+  xit('Generate profile from static tweets', () =>
     request(app).post('/api/profile/twitter')
       .type('form')
       .send({
