@@ -32,8 +32,27 @@ module.exports = (app) => {
       userId: req.body.userId,
     };
 
-    return twitterHelper.getTweets(user)
+    const copyTwitterProfile = (userProfile, watsonProfile) => {
+      watsonProfile.name = userProfile.name;
+      watsonProfile.user_name = userProfile.user_name;
+      watsonProfile.url = userProfile.url;
+      watsonProfile.description = userProfile.description;
+      let imageUrl = userProfile.profile_image_url.split('_normal');
+      let originalUrl = imageUrl.join('');
+      watsonProfile.profile_image_url = originalUrl;
+      return watsonProfile;
+    };
+
+    let twitterProfile;
+    return twitterHelper.getTwitterProfile(user)
+      .then((userProfile) => {
+        twitterProfile = userProfile;
+        return twitterHelper.getTweets(user);
+      })
       .then(profileFromTweets(req.body))
+      .then((profile) => {
+        return copyTwitterProfile(twitterProfile, profile);
+      })
       .then(res.json.bind(res))
       .catch(next);
   });

@@ -16,6 +16,13 @@
 const twitter = require('twitter');
 const MAX_COUNT = 200;
 
+const twit = new twitter({
+  consumer_key: process.env.TWITTER_CONSUMER_KEY,
+  consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+  access_token_key: process.env.TWITTER_ACCESS_TOKEN,
+  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+});
+
 /**
 * Get the tweets based on the given screen_name.
 * Implemented with recursive calls that fetch up to 200 tweets in every call
@@ -23,13 +30,6 @@ const MAX_COUNT = 200;
 */
 const getTweets = (user) =>
   new Promise((resolve, reject) => {
-
-    const twit = new twitter({
-      consumer_key: process.env.TWITTER_CONSUMER_KEY,
-      consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-      access_token_key: process.env.TWITTER_ACCESS_TOKEN,
-      access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
-    });
 
     let tweets = [];
     const params = {
@@ -57,4 +57,23 @@ const getTweets = (user) =>
     twit.get('statuses/user_timeline', params, processTweets);
   });
 
-module.exports = { getTweets };
+
+const getTwitterProfile = (user) => 
+  new Promise((resolve, reject) => {
+
+    const params = {
+      screen_name: user.userId
+    };
+
+    const processProfile = (error, profile) => {
+      // Check if newTweets its an error
+      if (error) {
+        return reject(error);
+      }
+      return resolve(profile);
+    };
+
+    twit.get('users/show', params, processProfile);
+  });
+
+module.exports = { getTweets, getTwitterProfile };

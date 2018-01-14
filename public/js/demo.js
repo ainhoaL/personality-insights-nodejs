@@ -509,6 +509,7 @@ $(document).ready(function() {
 
     // NOTE: v3 update - is this necessary here? - should it be moved elsewhere?
     globalState.currentProfile = data;
+    globalState.selectedTwitterImage = data.profile_image_url;
 
   }
 
