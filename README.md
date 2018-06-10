@@ -2,7 +2,7 @@
 
 This app uses [IBM Watson Personality Insights service](https://www.ibm.com/watson/services/personality-insights/) to analyze a Twitter user's personality.
 
-http://twitter-personality-watson.mybluemix.net/
+http://twitter-personality-insights.eu-gb.mybluemix.net/
 
 
 
